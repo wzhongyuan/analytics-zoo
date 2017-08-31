@@ -24,7 +24,7 @@ import com.intel.analytics.zoo.transform.vision.image.augmentation._
 import com.intel.analytics.zoo.transform.vision.image.opencv.OpenCVMat
 import com.intel.analytics.zoo.transform.vision.label.roi._
 import com.intel.analytics.zoo.transform.vision.util.NormalizedBox
-import org.opencv.core.{Mat, Point, Scalar}
+import org.opencv.core.{CvType, Mat, Point, Scalar}
 import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
 import org.scalatest.{FlatSpec, Matchers}
@@ -405,5 +405,40 @@ class FeatureTransformerSpec extends FlatSpec with Matchers {
       MatToFloats(validHeight = 1, validWidth = 1)
     val out = imgAug.transform(byteImage)
     out.getFloats().length should be(3)
+  }
+
+  "Pixel normalizer " should " work properly " in {
+    val resource = getClass().getClassLoader().getResource("image/000025.jpg")
+    val img = Files.readAllBytes(Paths.get(resource.getFile))
+    val feature = ImageFeature()
+   // feature(ImageFeature.bytes) = img
+    val openCVMat = OpenCVMat.toMat(img)
+    feature(ImageFeature.mat) = openCVMat
+
+    val height = openCVMat.height()
+    val width = openCVMat.width()
+
+    val total = height * width * 3
+
+    val mean = Tensor[Float](total).fill(1.0f)
+
+    val originPixel = new Array[Float](total)
+
+    if (openCVMat.`type`() != CvType.CV_32FC3) {
+      openCVMat.convertTo(openCVMat, CvType.CV_32FC3)
+    }
+
+    openCVMat.get(0, 0, originPixel)
+
+    PixelNormalizer(mean).transform(feature)
+
+    val transformedPixel = new Array[Float](total)
+
+    openCVMat.get(0, 0, transformedPixel)
+
+    originPixel.zip(transformedPixel).foreach(x => {
+      assert((x._1 - 1.0) == x._2)
+    })
+
   }
 }
