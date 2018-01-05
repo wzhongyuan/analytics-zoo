@@ -16,22 +16,26 @@
 
 package com.intel.analytics.zoo.models.imageclassification.util
 
-import com.intel.analytics.zoo.models.imageclassification.util.Dataset.Imagenet
+import com.intel.analytics.zoo.models.imageclassification.util.Dataset.{Imagenet, Places365}
 import com.intel.analytics.zoo.models.util.ModelLabelReader
 
 
 object LabelReader extends ModelLabelReader {
-  def readImagenetlLabelMap(): Map[Int, String] = {
+  def readImagenetLabelMap(): Map[Int, String] = {
     readLabelMap("/imagenet_classname.txt")
+  }
+
+  def readPlaces365LabelMap(): Map[Int, String] = {
+    readLabelMap("/places365_classname.txt")
   }
 
   def apply(dataset: String): Map[Int, String] = {
     Dataset(dataset) match {
-      case Imagenet =>
-        readImagenetlLabelMap()
+      case Imagenet => readImagenetLabelMap
+      case Places365 => readPlaces365LabelMap
       case _ =>
-        throw new Exception("currently only support Imagenet dataset in" +
-          " BigDL Image classification models")
+        throw new Exception(s"currently only support Imagenet and Places365 dataset in" +
+          s" BigDL Image classification models, $dataset not recognized")
     }
   }
 }

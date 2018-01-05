@@ -22,6 +22,7 @@ import com.intel.analytics.bigdl.numeric.NumericFloat
 import com.intel.analytics.bigdl.transform.vision.image.{FeatureTransformer, ImageFrameToSample, MatToTensor}
 import com.intel.analytics.bigdl.transform.vision.image.augmentation.{CenterCrop, ChannelNormalize, PixelNormalizer, Resize}
 import com.intel.analytics.zoo.models.Configure
+import com.intel.analytics.zoo.models.imageclassification.util.Dataset.{Imagenet, Places365}
 
 import scala.io.Source
 
@@ -38,8 +39,18 @@ object ImageClassificationConfig {
   def apply(model: String, dataset: String, version: String): Configure = {
     dataset match {
       case "imagenet" => ImagenetConfig(model, dataset, version)
+      case "places365" => Places365Config(model, dataset, version)
       case _ => throw new RuntimeException(s"dataset $dataset not supported for now")
     }
+  }
+
+  private[models] def createMean(meanFile : URL) : Array[Float] = {
+    val lines = Source.fromURL(meanFile).getLines.toArray
+    val array = new Array[Float](lines.size)
+    lines.zipWithIndex.foreach(data => {
+      array(data._2) = data._1.toFloat
+    })
+    array
   }
 }
 
@@ -47,32 +58,32 @@ object ImagenetConfig {
 
   val meanFile = getClass().getResource("/mean.txt")
 
-  val mean : Array[Float] = createMean(meanFile)
+  val mean : Array[Float] = ImageClassificationConfig.createMean(meanFile)
 
-  val imagenetLabelMap = LabelReader("IMAGENET")
+  val imagenetLabelMap = LabelReader(Imagenet.value)
 
   def apply(model: String, dataset: String, version: String): Configure = {
     model match {
-      case "alexnet" => Configure(preProcessor = alexnetPreprocessor,
+      case "alexnet" => Configure(preProcessor = alexnetImagenetPreprocessor,
         labelMap = imagenetLabelMap)
-      case "inception-v1" => Configure(preProcessor = inceptionV1Preprocessor,
+      case "inception-v1" => Configure(preProcessor = inceptionV1ImagenetPreprocessor,
         labelMap = imagenetLabelMap)
-      case "resnet-50" => Configure(preProcessor = resnetPreprocessor,
+      case "resnet-50" => Configure(preProcessor = resnetImagenetPreprocessor,
         labelMap = imagenetLabelMap)
-      case "vgg-16" => Configure(preProcessor = vggPreprocessor,
+      case "vgg-16" => Configure(preProcessor = vggImagenetPreprocessor,
         labelMap = imagenetLabelMap)
-      case "vgg-19" => Configure(preProcessor = vggPreprocessor,
+      case "vgg-19" => Configure(preProcessor = vggImagenetPreprocessor,
         labelMap = imagenetLabelMap)
-      case "densenet-161" => Configure(preProcessor = densenetPreprocessor,
+      case "densenet-161" => Configure(preProcessor = densenetImagenetPreprocessor,
         labelMap = imagenetLabelMap)
-      case "squeezenet" => Configure(preProcessor = squeezenetPreprocessor,
+      case "squeezenet" => Configure(preProcessor = squeezenetImagenetPreprocessor,
         labelMap = imagenetLabelMap)
-      case "mobilenet" => Configure(preProcessor = mobilenetPreprocessor,
+      case "mobilenet" => Configure(preProcessor = mobilenetImagenetPreprocessor,
         labelMap = imagenetLabelMap)
     }
   }
 
-  def alexnetPreprocessor() : FeatureTransformer = {
+  def alexnetImagenetPreprocessor() : FeatureTransformer = {
     Resize(Consts.IMAGENET_RESIZE, Consts.IMAGENET_RESIZE) ->
       PixelNormalizer(mean) -> CenterCrop(227, 227) ->
       MatToTensor() -> ImageFrameToSample()
@@ -86,37 +97,58 @@ object ImagenetConfig {
       MatToTensor() -> ImageFrameToSample()
   }
 
-  def inceptionV1Preprocessor(): FeatureTransformer = {
+  def inceptionV1ImagenetPreprocessor(): FeatureTransformer = {
     commonPreprocessor(224, 123, 117, 104)
   }
 
-  def resnetPreprocessor() : FeatureTransformer = {
+  def resnetImagenetPreprocessor() : FeatureTransformer = {
     commonPreprocessor(224, 0.485f, 0.456f, 0.406f, 0.229f, 0.224f, 0.225f)
   }
 
-  def vggPreprocessor(): FeatureTransformer = {
+  def vggImagenetPreprocessor(): FeatureTransformer = {
     commonPreprocessor(224, 123, 117, 104)
   }
 
-  def densenetPreprocessor() : FeatureTransformer = {
+  def densenetImagenetPreprocessor() : FeatureTransformer = {
     commonPreprocessor(224, 123, 117, 104, 1/0.017f, 1/0.017f, 1/0.017f)
   }
 
-  def mobilenetPreprocessor() : FeatureTransformer = {
+  def mobilenetImagenetPreprocessor() : FeatureTransformer = {
     commonPreprocessor(224, 123.68f, 116.78f, 103.94f, 1/0.017f, 1/0.017f, 1/0.017f )
   }
 
-  def squeezenetPreprocessor(): FeatureTransformer = {
+  def squeezenetImagenetPreprocessor(): FeatureTransformer = {
     commonPreprocessor(227, 123, 117, 104)
   }
+}
 
-  private def createMean(meanFile : URL) : Array[Float] = {
-    val lines = Source.fromURL(meanFile).getLines.toArray
-    val array = new Array[Float](lines.size)
-    lines.zipWithIndex.foreach(data => {
-      array(data._2) = data._1.toFloat
-    })
-    array
+object Places365Config {
+
+  val meanFile = getClass().getResource("/places365_mean.txt")
+
+  val mean : Array[Float] = ImageClassificationConfig.createMean(meanFile)
+
+  val places365LabelMap = LabelReader(Places365.value)
+
+  def apply(model: String, dataset: String, version: String): Configure = {
+    model match {
+      case "alexnet" => Configure(preProcessor = alexnetPlaces365Preprocessor,
+        labelMap = places365LabelMap)
+      case "vgg-16" => Configure(preProcessor = vggPlaces365Preprocessor,
+        labelMap = places365LabelMap)
+    }
+  }
+
+  def alexnetPlaces365Preprocessor() : FeatureTransformer = {
+    Resize(Consts.IMAGENET_RESIZE, Consts.IMAGENET_RESIZE) ->
+      PixelNormalizer(mean) -> CenterCrop(227, 227) ->
+      MatToTensor() -> ImageFrameToSample()
+  }
+
+  def vggPlaces365Preprocessor() : FeatureTransformer = {
+    Resize(Consts.IMAGENET_RESIZE, Consts.IMAGENET_RESIZE) ->
+      PixelNormalizer(mean) -> CenterCrop(224, 224) ->
+      MatToTensor() -> ImageFrameToSample()
   }
 }
 
@@ -128,11 +160,16 @@ object Dataset {
   def apply(datasetString: String): Dataset = {
     datasetString.toUpperCase match {
       case Imagenet.value => Imagenet
+      case Places365.value => Places365
     }
   }
 
   case object Imagenet extends Dataset {
     val value = "IMAGENET"
+  }
+
+  case object Places365 extends Dataset {
+    val value = "PLACES365"
   }
 
 }
