@@ -25,10 +25,10 @@ We built a storm topology from top to bottom as listed below
                                .....................
 
                                          
-* ImageSpout  A Spout implementation to simulate continously feeding image data
-* ImagePredictor  A bolt implementation to predict on top of InceptionV1 with incoming image
-* LabelResult A bolt implementation to map prediction result with real imagenet labels
-* ImageFilter A bolt implementation to filter out expected image with given keyword
+* **ImageSpout**  A Spout implementation to simulate continously feeding image data
+* **ImagePredictor**  A bolt implementation to predict on top of InceptionV1 with incoming image
+* **LabelResult** A bolt implementation to map prediction result with real imagenet labels
+* **ImageFilter** A bolt implementation to filter out expected images with given keyword
 
 ### Steps for run the example
 
@@ -36,7 +36,7 @@ imageFoler=... #image folder you want to predict on, in the example the Spout wi
 
 modelPath=... #Bigdl model, you could find pre-trained models in [Model Zoo](https://github.com/intel-analytics/analytics-zoo/tree/master/models)
 
-threshold=... #possibilty threshold, if a predicted category is of the specific kind and the possibility is not less than threshold, the image will be tought to be an expected one
+threshold=... #possibilty threshold, if a predicted category is of the specific kind and the possibility is not less than threshold, the image will be thought to be an expected one
 
 target=... # keyword to specify which kind to filter, i.e. cat, fish, goldfish, etc.
 
